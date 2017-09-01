@@ -2,6 +2,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 import torch.optim as optim
+from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from fashionmnist import FashionMNIST
 from torchvision import datasets
@@ -138,13 +139,16 @@ if __name__ == '__main__':
     print(net, file=logfile)
 
     # Change optimizer for finetuning
-    optimizer = optim.Adam(net.parameters())
+    #optimizer = optim.Adam(net.parameters())
+    optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
     for e in range(args.nepochs):
         start = time.time()
         train_loss, train_acc = train(net, train_loader,
             criterion, optimizer)
         val_loss, val_acc = validate(net, val_loader, criterion)
+        scheduler.step(val_loss)
         end = time.time()
 
         # print stats
@@ -160,15 +164,19 @@ if __name__ == '__main__':
         log_value('val_acc', val_acc, e)
 
         #early stopping and save best model
-        if val_loss < best_loss:
-            best_loss = val_loss
-            patience = args.patience
-            utils.save_model({
-                'arch': args.model,
-                'state_dict': net.state_dict()
-            }, 'saved-models/{}-run-{}.pth.tar'.format(args.model, run))
-        else:
-            patience -= 1
-            if patience == 0:
-                print('Run out of patience!')
-                break
+        #if val_loss < best_loss:
+        #    best_loss = val_loss
+        #    patience = args.patience
+        #    utils.save_model({
+        #        'arch': args.model,
+        #        'state_dict': net.state_dict()
+        #    }, 'saved-models/{}-run-{}.pth.tar'.format(args.model, run))
+        #else:
+        #    patience -= 1
+        #    if patience == 0:
+        #        print('Run out of patience!')
+        #        break
+    utils.save_model({
+        'arch': args.model,
+        'state_dict': net.state_dict()
+    }, 'saved-models/{}-run-{}.pth.tar'.format(args.model, run))
